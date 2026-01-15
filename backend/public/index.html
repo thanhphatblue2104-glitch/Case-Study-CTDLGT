@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supermarket Inventory (Auth)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input,
+        button {
+            margin-top: 5px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #auth_section {
+            background: #eef;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Inventory Management</h1>
+
+    <!-- Auth Section -->
+    <div id="auth_section" class="section">
+        <h2>Authentication</h2>
+        <div id="login_form">
+            <h3>Login</h3>
+            <label>Email: <input type="email" id="login_email" value="admin@test.com"></label>
+            <label>Password: <input type="password" id="login_pass" value="password123"></label>
+            <button onclick="login()">Login</button>
+            <button onclick="showRegister()">Switch to Register</button>
+        </div>
+
+        <div id="register_form" class="hidden">
+            <h3>Register</h3>
+            <label>Name: <input type="text" id="reg_name" value="Admin"></label>
+            <label>Email: <input type="email" id="reg_email" value="admin@test.com"></label>
+            <label>Password: <input type="password" id="reg_pass" value="password123"></label>
+            <button onclick="register()">Register</button>
+            <button onclick="showLogin()">Switch to Login</button>
+        </div>
+
+        <div id="user_info" class="hidden">
+            <p>Welcome, <span id="user_name"></span>!</p>
+            <button onclick="logout()">Logout</button>
+        </div>
+        <pre id="auth_res">...</pre>
+    </div>
+
+    <!-- Inventory Sections (Protected) -->
+    <div id="app_content" class="hidden">
+        <div class="section">
+            <h2>1. Import Goods (Add Batch)</h2>
+            <label>Product ID: <input type="number" id="imp_pid" value="1"></label>
+            <label>Quantity: <input type="number" id="imp_qty" value="100"></label>
+            <label>Expiration Date: <input type="date" id="imp_exp"></label>
+            <button onclick="importGoods()">Import</button>
+            <pre id="import_res">...</pre>
+        </div>
+
+        <div class="section">
+            <h2>2. Request Export (Add to Queue)</h2>
+            <label>Product ID: <input type="number" id="exp_pid" value="1"></label>
+            <label>Quantity: <input type="number" id="exp_qty" value="10"></label>
+            <button onclick="requestExport()">Add to Queue</button>
+            <pre id="export_res">...</pre>
+        </div>
+
+        <div class="section">
+            <h2>3. Process Queue (Using Heap Logic)</h2>
+            <button onclick="processQueue()">Process All Requests</button>
+            <pre id="process_res">...</pre>
+        </div>
+
+        <div class="section">
+            <h2>4. View Expiring Products (Heap Dump)</h2>
+            <button onclick="checkExpiring()">Check</button>
+            <pre id="expiring_res">...</pre>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let token = localStorage.getItem('token');
+
+        function updateUI() {
+            if (token) {
+                document.getElementById('login_form').classList.add('hidden');
+                document.getElementById('register_form').classList.add('hidden');
+                document.getElementById('user_info').classList.remove('hidden');
+                document.getElementById('app_content').classList.remove('hidden');
+                document.getElementById('user_name').textContent = 'User';
+            } else {
+                document.getElementById('login_form').classList.remove('hidden');
+                document.getElementById('user_info').classList.add('hidden');
+                document.getElementById('app_content').classList.add('hidden');
+            }
+        }
+
+        updateUI();
+
+        function showRegister() {
+            document.getElementById('login_form').classList.add('hidden');
+            document.getElementById('register_form').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('register_form').classList.add('hidden');
+            document.getElementById('login_form').classList.remove('hidden');
+        }
+
+        function logout() {
+            token = null;
+            localStorage.removeItem('token');
+            updateUI();
+        }
+
+        async function post(endpoint, data, auth = false) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (auth && token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(API + endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(data)
+            });
+            return res.json();
+        }
+
+        async function get(endpoint, auth = false) {
+            const headers = {};
+            if (auth && token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(API + endpoint, { headers });
+            return res.json();
+        }
+
+        async function register() {
+            const name = document.getElementById('reg_name').value;
+            const email = document.getElementById('reg_email').value;
+            const password = document.getElementById('reg_pass').value;
+
+            const data = await post('/auth/register', { name, email, password });
+            document.getElementById('auth_res').textContent = JSON.stringify(data, null, 2);
+            if (!data.error) showLogin();
+        }
+
+        async function login() {
+            const email = document.getElementById('login_email').value;
+            const password = document.getElementById('login_pass').value;
+
+            const data = await post('/auth/login', { email, password });
+            document.getElementById('auth_res').textContent = JSON.stringify(data, null, 2);
+
+            if (data.token) {
+                token = data.token;
+                localStorage.setItem('token', token);
+                updateUI();
+            }
+        }
+
+        async function importGoods() {
+            const pid = parseInt(document.getElementById('imp_pid').value);
+            const qty = parseInt(document.getElementById('imp_qty').value);
+            const exp = document.getElementById('imp_exp').value;
+
+            const data = await post('/inventory/import', {
+                productId: pid,
+                quantity: qty,
+                expirationDate: new Date(exp).toISOString()
+            }, true);
+            document.getElementById('import_res').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function requestExport() {
+            const pid = parseInt(document.getElementById('imp_pid').value); // Using imp IP for demo
+
+            const data = await post('/inventory/export-request', {
+                productId: parseInt(document.getElementById('exp_pid').value),
+                quantity: parseInt(document.getElementById('exp_qty').value)
+            }, true);
+            document.getElementById('export_res').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function processQueue() {
+            const data = await post('/inventory/process-queue', {}, true);
+            document.getElementById('process_res').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function checkExpiring() {
+            const data = await get('/inventory/expiring', true);
+            document.getElementById('expiring_res').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+
+</html>
