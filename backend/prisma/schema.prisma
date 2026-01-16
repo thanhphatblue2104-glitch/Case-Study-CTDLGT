@@ -20,6 +20,7 @@ model Product {
   name      String
   category  String?
   unit      String?
+  image     String?
 
   batches   Batch[]
   audits    StockAudit[]
@@ -37,7 +38,8 @@ model User {
 
 model Batch {
   id             Int      @id @default(autoincrement())
-  expirationDate DateTime
+  expirationDate   DateTime
+  manufacturingDate DateTime @default(now())
   quantity       Int
   importDate     DateTime @default(now())
 

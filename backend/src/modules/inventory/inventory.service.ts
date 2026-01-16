@@ -19,6 +19,7 @@ export const importGoods = async (data: {
     productId: number;
     quantity: number;
     expirationDate: string; // ISO string
+    manufacturingDate?: string; // ISO string
     supplier?: string;
 }) => {
     // 1. Create Batch in DB
@@ -27,6 +28,7 @@ export const importGoods = async (data: {
             productId: data.productId,
             quantity: data.quantity,
             expirationDate: new Date(data.expirationDate),
+            manufacturingDate: data.manufacturingDate ? new Date(data.manufacturingDate) : new Date(),
         },
     });
 

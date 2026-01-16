@@ -5,7 +5,7 @@ export const searchProducts = async (query: string) => {
     return await prisma.product.findMany({
         where: {
             OR: [
-                { name: { contains: query, mode: "insensitive" } },
+                { name: { contains: query } },
                 { barcode: { contains: query } },
             ],
         },
@@ -28,7 +28,17 @@ export const createProduct = async (data: {
     name: string;
     category?: string;
     unit?: string;
+    image?: string;
 }) => {
+    // Check if product exists
+    const existing = await prisma.product.findUnique({
+        where: { barcode: data.barcode }
+    });
+
+    if (existing) {
+        return existing;
+    }
+
     return await prisma.product.create({
         data,
     });

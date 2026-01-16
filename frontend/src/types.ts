@@ -4,6 +4,7 @@ export interface Product {
     name: string;
     category?: string;
     unit?: string;
+    image?: string;
     createdAt: string;
     updatedAt: string;
     batches?: Batch[];
@@ -14,6 +15,8 @@ export interface Batch {
     productId: number;
     quantity: number;
     expirationDate: string;
+    manufacturingDate?: string;
+    importDate?: string;
     createdAt: string;
 }
 

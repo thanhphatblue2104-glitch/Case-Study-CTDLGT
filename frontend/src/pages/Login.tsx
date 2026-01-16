@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import api from '../api';
 
 const Login: React.FC = () => {
@@ -50,6 +51,26 @@ const Login: React.FC = () => {
                         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                         <div className="flex items-baseline justify-between">
                             <button className="px-6 py-2 mt-4 text-white bg-blue-600 rounded-lg hover:bg-blue-900 w-full" type="submit">Login</button>
+                        </div>
+
+                        <div className="mt-4 flex justify-center">
+                            <GoogleLogin
+                                onSuccess={async (credentialResponse) => {
+                                    try {
+                                        const res = await api.post('/auth/google', {
+                                            token: credentialResponse.credential,
+                                        });
+                                        localStorage.setItem('token', res.data.token);
+                                        navigate('/');
+                                    } catch (err: any) {
+                                        console.error("Google Login Failed", err);
+                                        setError('Google Login failed');
+                                    }
+                                }}
+                                onError={() => {
+                                    setError('Google Login Failed');
+                                }}
+                            />
                         </div>
                         <div className="mt-4 text-center">
                             <Link to="/register" className="text-sm text-blue-600 hover:underline">Don't have an account? Register</Link>

@@ -1,0 +1,6 @@
+[Service] creating product: {"name":"Test Coke","barcode":"TEST_12345","category":"Beverage","unit":"Start","image":"https://example.com/coke.png"}
+[Service] existing search result: FOUND
+[Service] returning existing product
+[Service] creating product: {"name":"Test Coke 2","barcode":"TEST_12345","category":"Beverage","unit":"Start","image":"https://example.com/coke.png"}
+[Service] existing search result: FOUND
+[Service] returning existing product

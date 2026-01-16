@@ -119,8 +119,6 @@ Khởi động giao diện quản lý dữ liệu
 npx prisma studio
 ```
 
-Giờ bạn có thể:
-
 Hướng dẫn chạy dự án CTDLGT
 Dự án bao gồm 2 phần: Backend (Node.js/Express) và Frontend (React/Vite). Bạn cần chạy cả 2 để ứng dụng hoạt động đầy đủ.
 
@@ -129,8 +127,7 @@ Node.js đã được cài đặt.
 Các thư viện (node_modules) đã được cài đặt (Tôi đã kiểm tra thấy chúng đã tồn tại).
 2. Chạy Backend
 Backend sẽ chạy trên cổng mặc định (thường là 3000 hoặc được cấu hình trong 
-.env
-).
+.env).
 
 Mở terminal mới.
 Di chuyển vào thư mục backend:

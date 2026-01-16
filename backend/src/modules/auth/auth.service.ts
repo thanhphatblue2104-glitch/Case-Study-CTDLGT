@@ -54,3 +54,59 @@ export const login = async (data: { email: string; password: string }) => {
 
     return { token, user: { id: user.id, email: user.email, name: user.name } };
 };
+
+import { OAuth2Client } from 'google-auth-library';
+
+const client = new OAuth2Client(process.env.Client_ID);
+
+export const googleLogin = async (token: string) => {
+    const clientId = process.env.Client_ID;
+    console.log("Debug: Client_ID from env:", clientId);
+
+    if (!clientId) {
+        throw new Error("Google Client ID not configured");
+    }
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: clientId,
+        });
+        const payload = ticket.getPayload();
+
+        if (!payload || !payload.email) {
+            throw new Error("Invalid Google Token payload");
+        }
+
+        const { email, name } = payload;
+        console.log("Debug: Google Login Success for:", email);
+
+        let user = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            // Create user if not exists
+            const randomPassword = Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(randomPassword, SALT_ROUNDS);
+
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name: name || "Google User",
+                    password: hashedPassword,
+                },
+            });
+        }
+
+        // Generate Token
+        const jwtToken = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+            expiresIn: "1h",
+        });
+
+        return { token: jwtToken, user: { id: user.id, email: user.email, name: user.name } };
+    } catch (error) {
+        console.error("Debug: Google Verify Error:", error);
+        throw error;
+    }
+};
