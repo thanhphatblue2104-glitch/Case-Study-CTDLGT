@@ -1,4 +1,4 @@
-import type { Product, Batch } from '../types';
+import type { Batch } from '../types';
 
 export interface Order {
     id: number;
@@ -122,12 +122,17 @@ class OrderQueue {
     getHistory(): Order[] {
         return this.history;
     }
+
+    clear(): void {
+        this.queue = [];
+        this.history = [];
+    }
 }
 
 // Core Manager Class
 class InventoryManager {
     // Data Structure: Hash Map for O(1) Lookup
-    private productMap: Map<string, Batch> = new Map(); // Mapping Barcode/ID -> Batch (Simplification: Assuming 1 batch per barcode for search demo, or mapping to list)
+    // private productMap: Map<string, Batch> = new Map(); // Removed as unused
     // Actually, for "Fast Search", we usually search by Product Barcode. One Product can have multiple batches.
     // Let's Map Barcode -> List of Batches for that product.
     private barcodeMap: Map<string, Batch[]> = new Map();
@@ -151,10 +156,46 @@ class InventoryManager {
         this.expiryHeap.insert(batch);
     }
 
+    // Load real expiring data from Backend and sync with Heap
+    async loadExpiringData(): Promise<void> {
+        try {
+            const response = await fetch('http://localhost:3000/api/inventory/expiring');
+            if (response.ok) {
+                const expiringBatches: Batch[] = await response.json();
+
+                // Clear and re-populate Heap
+                this.expiryHeap.clear();
+                expiringBatches.forEach(b => this.expiryHeap.insert(b));
+
+                console.log(`[Manager] Sync: Loaded ${expiringBatches.length} batches into Expiry Heap.`);
+            }
+        } catch (error) {
+            console.error("[Manager] Failed to load expiring data", error);
+        }
+    }
+
     // Complexity: O(n) - Clearing all structures
     clear(): void {
         this.barcodeMap.clear();
         this.expiryHeap.clear();
+        this.orderQueue.clear();
+    }
+
+    async deleteBatch(id: number): Promise<boolean> {
+        try {
+            const response = await fetch(`http://localhost:3000/api/inventory/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Failed to delete batch:", errorText);
+            }
+            return response.ok;
+        } catch (error) {
+            console.error("Failed to delete batch", error);
+            return false;
+        }
     }
 
     // Complexity: O(1) - Direct Map Lookup

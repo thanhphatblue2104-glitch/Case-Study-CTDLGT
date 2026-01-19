@@ -17,6 +17,7 @@ export interface Batch {
     expirationDate: string;
     manufacturingDate?: string;
     importDate?: string;
+    supplier?: string;
     createdAt: string;
 }
 

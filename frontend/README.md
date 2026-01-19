@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# Frontend - Case Study CTDLGT
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Đây là giao diện người dùng (Frontend) cho dự án Quản lý Kho, được xây dựng bằng **React**, **Vite**, và **Tailwind CSS**.
 
-Currently, two official plugins are available:
+## 0️⃣ Yêu cầu (Prerequisites)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [Node.js](https://nodejs.org/) (Phiên bản v18 trở lên)
+- Backend đang chạy (để API hoạt động đúng)
 
-## React Compiler
+## 1️⃣ Cài đặt (Installation)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1.  Di chuyển vào thư mục frontend:
+    ```bash
+    cd frontend
+    ```
 
-## Expanding the ESLint configuration
+2.  Cài đặt các thư viện:
+    ```bash
+    npm install
+    ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 2️⃣ Chạy dự án (Run Project)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Môi trường Dev
+Để khởi động server phát triển (Development Server):
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Ứng dụng sẽ chạy tại địa chỉ: `http://localhost:5173` (hoặc port khác nếu 5173 đang bận, xem terminal để biết chi tiết).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Build cho Production
+Để đóng gói ứng dụng:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+File đóng gói sẽ nằm trong thư mục `dist/`.
+
+## 3️⃣ Cấu trúc thư mục chính
+
+-   `src/apis.ts`: Cấu hình Axios gọi API tới Backend.
+-   `src/pages/`: Các trang chính (Dashboard, Inventory, Export...).
+-   `src/services/`: Logic xử lý dữ liệu (InventoryManager - thuật toán Heap/Queue).
+-   `src/types.ts`: Định nghĩa kiểu dữ liệu TypeScript.
+
+## 4️⃣ Lưu ý
+
+-   Nếu không gọi được API, hãy kiểm tra xem Backend có đang chạy ở `http://localhost:3000` không.
+-   Nếu muốn đổi port backend, hãy sửa trong file `src/api.ts` hoặc biến môi trường `VITE_API_URL`.

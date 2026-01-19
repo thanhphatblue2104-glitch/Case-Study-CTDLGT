@@ -65,7 +65,7 @@ model ImportDetail {
   quantity Int
 
   import   ImportReceipt @relation(fields: [importId], references: [id])
-  batch    Batch         @relation(fields: [batchId], references: [id])
+  batch    Batch         @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@id([importId, batchId])
 }
@@ -85,7 +85,7 @@ model ExportDetail {
   quantity Int
 
   export   ExportReceipt @relation(fields: [exportId], references: [id])
-  batch    Batch         @relation(fields: [batchId], references: [id])
+  batch    Batch         @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@id([exportId, batchId])
 }

@@ -9,5 +9,6 @@ router.post("/import", inventoryController.importGoods);
 router.post("/export-request", inventoryController.requestExport);
 router.post("/process-queue", inventoryController.processQueue);
 router.get("/expiring", inventoryController.getExpiring);
+router.delete("/:id", inventoryController.deleteBatch);
 
 export default router;

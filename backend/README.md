@@ -1,157 +1,73 @@
-# 🚀 Setup Backend Basic (Node.js + Prisma + PostgreSQL + Docker)
+# Backend - Case Study CTDLGT
 
-## 0️⃣ Yêu cầu
+Đây là backend cho dự án Quản lý Kho (Warehouse Management), được viết bằng **Node.js**, **Express**, và **Prisma** (SQLite).
 
+## 0️⃣ Yêu cầu (Prerequisites)
+
+Trước khi chạy, hãy đảm bảo máy bạn đã cài:
 - Node.js >= 18
 - Docker & Docker Compose
 - npm
 
-## 1️⃣ Khởi động Database bằng Docker
+## 1️⃣ Cài đặt (Installation)
 
-### Chạy database
+1.  Di chuyển vào thư mục backend:
+    ```bash
+    cd backend
+    ```
 
-```bash
-docker compose up -d
-```
+2.  Cài đặt các gói thư viện (dependencies):
+    ```bash
+    npm install
+    ```
 
-### Kiểm tra container
+## 2️⃣ Cấu hình Database (Prisma + SQLite)
 
-```bash
-docker ps
-```
+Dự án sử dụng SQLite (file `dev.db`), nên bạn không cần cài đặt MySQL hay PostgreSQL.
 
-## 2️⃣ Cài dependency
+1.  Khởi tạo database và áp dụng schema:
+    ```bash
+    npx prisma db push
+    ```
+    *(Lệnh này sẽ tạo file `prisma/dev.db` dựa trên `schema.prisma`)*
 
-```bash
-npm install
-```
+2.  (Tùy chọn) Chạy script tạo dữ liệu mẫu nếu có:
+    ```bash
+    npx ts-node create_user_script.ts
+    ```
 
-## 3️⃣ Cài & khởi tạo Prisma
+3.  (Tùy chọn) Xem dữ liệu bằng giao diện trực quan:
+    ```bash
+    npx prisma studio
+    ```
 
-```bash
-npx prisma init
-```
+## 3️⃣ Chạy dự án (Run Project)
 
-👉 Lệnh này sẽ tạo:
-
-```
-prisma/
-└─ schema.prisma
-```
-
-👉 Đồng thời sinh file `.env`
-
-### Sửa .env cho đúng PostgreSQL (QUAN TRỌNG)
-
-```env
-DATABASE_URL="postgresql://todolist_user:todolist_pass@localhost:5432/todolist_db"
-```
-
-⚠️ KHÔNG dùng mysql URL vì project đang chạy Postgres bằng Docker.
-
-## 4️⃣ Tạo schema Todo (QUAN TRỌNG)
-
-### Mở file: `prisma/schema.prisma`
-
-Ví dụ:
-
-```prisma
-model Todo {
-    id        Int      @id @default(autoincrement())
-    title     String
-    completed Boolean  @default(false)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-```
-
-## 5️⃣ Migrate database & generate Prisma Client
-
-```bash
-npx prisma migrate dev --name init
-npx prisma generate
-```
-
-👉 Kết quả:
-
-- Database tạo bảng Todo
-- Prisma Client sẵn sàng dùng trong code
-
-## 6️⃣ Kiểm tra database (tuỳ chọn)
-
-```bash
-npx prisma studio
-```
-
-👉 Mở browser để xem & chỉnh sửa dữ liệu trực tiếp.
-
-## 7️⃣ Chạy backend
+### Môi trường Dev (Development)
+Chạy server với chế độ hot-reload (tự động restart khi sửa code):
 
 ```bash
 npm run dev
 ```
 
-Server mặc định: `http://localhost:3000`
+Server sẽ chạy tại: `http://localhost:3000`
 
-## 📌 Done!
-
-Dừng và xóa container cũ:
+### Môi trường Prod (Production)
+Build và chạy code JS đã biên dịch:
 
 ```bash
-docker rm -f todolist-db
+npm run build
+npm start
 ```
 
-Chạy lại lệnh khởi động:
+## 4️⃣ Cấu trúc thư mục
 
-```bash
-docker compose up -d
-```
+-   `src/server.ts`: Entry point của ứng dụng.
+-   `src/modules/`: Chứa các controller, service, route cho từng tính năng (Inventory, Product, Auth...).
+-   `prisma/schema.prisma`: Định nghĩa cấu trúc Database.
+-   `dev.db`: File database SQLite (được tạo tự động).
 
-Đẩy cấu hình vào Database
+## 5️⃣ Ghi chú
 
-```bash
-npx prisma db push
-```
-
-Khởi động giao diện quản lý dữ liệu
-
-```bash
-npx prisma studio
-```
-
-Hướng dẫn chạy dự án CTDLGT
-Dự án bao gồm 2 phần: Backend (Node.js/Express) và Frontend (React/Vite). Bạn cần chạy cả 2 để ứng dụng hoạt động đầy đủ.
-
-1. Yêu cầu
-Node.js đã được cài đặt.
-Các thư viện (node_modules) đã được cài đặt (Tôi đã kiểm tra thấy chúng đã tồn tại).
-2. Chạy Backend
-Backend sẽ chạy trên cổng mặc định (thường là 3000 hoặc được cấu hình trong 
-.env).
-
-Mở terminal mới.
-Di chuyển vào thư mục backend:
-```bash
-cd backend
-```
-
-Chạy lệnh:
-```bash
-npm run dev
-```
-Cách khác: Bạn có thể chạy file 
-start_server.bat
- ở thư mục gốc để tự động chạy backend.
-
-3. Chạy Frontend
-Frontend sẽ chạy trên cổng development của Vite (thường là 5173).
-
-Mở terminal mới (khác với terminal backend).
-Di chuyển vào thư mục frontend:
-```bash
-cd frontend
-```
-
-Chạy lệnh:
-```bash
-npm run dev
+-   Đảm bảo frontend chạy đúng port API (mặc định frontend gọi `localhost:3000`).
+-   Nếu gặp lỗi liên quan đến Prisma client, hãy chạy: `npx prisma generate`

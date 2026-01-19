@@ -36,3 +36,13 @@ export const getExpiring = async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const deleteBatch = async (req: Request, res: Response) => {
+    try {
+        const id = parseInt(req.params.id || "0");
+        const result = await inventoryService.deleteBatch(id);
+        res.json({ message: "Batch deleted successfully", result });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

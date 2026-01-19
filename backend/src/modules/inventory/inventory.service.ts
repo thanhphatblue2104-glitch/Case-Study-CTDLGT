@@ -154,3 +154,9 @@ export const getExpiringProducts = async () => {
 
     return sorted;
 };
+
+export const deleteBatch = async (id: number) => {
+    return await prisma.batch.delete({
+        where: { id: id }
+    });
+};

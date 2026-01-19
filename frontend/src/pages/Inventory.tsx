@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Search, PackageOpen, RotateCcw } from 'lucide-react';
+import { Search, PackageOpen, RotateCcw, Trash2 } from 'lucide-react';
 import api from '../api';
 import type { Batch, Product } from '../types';
 import InventoryOverview from '../components/InventoryOverview';
 import RecentActivity from '../components/RecentActivity';
 import CriticalAlerts from '../components/CriticalAlerts';
-import { inventoryManager } from '../services/InventoryManager'; // Import the Singleton Manager
+import { inventoryManager } from '../services/InventoryManager';
 
 const Inventory: React.FC = () => {
     const [batches, setBatches] = useState<Batch[]>([]);
-    const [displayBatches, setDisplayBatches] = useState<Batch[]>([]); // Separated state for display vs raw data
+    const [displayBatches, setDisplayBatches] = useState<Batch[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -17,17 +17,14 @@ const Inventory: React.FC = () => {
         loadData();
     }, []);
 
-    // 1. Load Data & Initialize Manager
     const loadData = async () => {
         setLoading(true);
-        // Clear manager before reloading to avoid duplicates in this demo
         inventoryManager.clear();
 
         try {
-            // Fetch all products to populate the manager (In a real app, we might paginate, but for this demo needed for Client-side Search)
             const response = await api.get('/products');
             const products: Product[] = response.data;
-
+            await inventoryManager.loadExpiringData();
             const allBatches: Batch[] = [];
 
             products.forEach(p => {
@@ -35,14 +32,11 @@ const Inventory: React.FC = () => {
                     p.batches.forEach(b => {
                         const batchWithProduct = {
                             ...b,
-                            // @ts-ignore - manual attachment for display
+                            // @ts-ignore
                             product: p
                         };
                         allBatches.push(batchWithProduct);
-                        // Add to Manager (Heap & Map)
                         inventoryManager.addBatch(batchWithProduct);
-
-                        // Simulate "Recent Activity" by adding to Queue History
                         inventoryManager.addOrder({
                             id: Math.floor(Math.random() * 10000),
                             type: 'IMPORT',
@@ -63,7 +57,6 @@ const Inventory: React.FC = () => {
         }
     };
 
-    // 2. Fast Search Implementation (O(1))
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const term = e.target.value;
         setSearchTerm(term);
@@ -73,14 +66,11 @@ const Inventory: React.FC = () => {
             return;
         }
 
-        // Use Manager's Fast Search (Map Lookup)
         const preciseResult = inventoryManager.fastSearch(term);
 
         if (preciseResult) {
-            console.log(`[Fast Search] Instant Match for ${term}`);
             setDisplayBatches(preciseResult);
         } else {
-            // Fallback for partial name search (O(n)) if not a specific barcode
             const lowerTerm = term.toLowerCase();
             const filtered = batches.filter(b =>
                 // @ts-ignore
@@ -93,142 +83,154 @@ const Inventory: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Top Grid: Overview, Alerts & Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:h-[400px] h-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 h-auto">
                 <div className="lg:col-span-2 h-full">
                     <InventoryOverview batches={batches} />
                 </div>
                 <div className="h-full">
                     <CriticalAlerts batches={batches} />
                 </div>
-                <div className="h-full">
-                    {/* Bind "Recent Activity" to Manager's Queue History */}
+                <div className="h-full block lg:hidden xl:block">
                     <RecentActivity batches={batches} />
                 </div>
             </div>
 
             {/* Inventory List Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        Inventory List
-                        <span className="text-sm font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                            {displayBatches.length} Items
-                        </span>
-                    </h2>
+            <div className="bg-white rounded-3xl shadow-lg shadow-gray-100/50 border border-gray-100 flex flex-col overflow-hidden animate-slide-up stagger-3">
+                <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                            Inventory List
+                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                                {displayBatches.length} items
+                            </span>
+                        </h2>
+                        <p className="text-gray-400 text-sm mt-1">Manage all your warehouse items in one place.</p>
+                    </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <div className="relative flex-1 md:w-80 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
                             <input
                                 type="text"
-                                placeholder="Scan barcode for O(1) search..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus:outline-none transition-all"
+                                placeholder="Search product, ID, or barcode..."
+                                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none transition-all placeholder-gray-400 font-medium text-gray-700"
                                 value={searchTerm}
                                 onChange={handleSearch}
                             />
                         </div>
-                        <button onClick={loadData} className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors" title="Reload Data">
+                        <button onClick={loadData} className="p-3 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 rounded-xl transition-all shadow-sm" title="Reload Data">
                             <RotateCcw size={20} />
                         </button>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center p-20 text-gray-400">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-                        Loading inventory...
+                    <div className="flex flex-col items-center justify-center p-32 text-gray-400">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+                        <span className="animate-pulse font-medium">Loading warehouse data...</span>
                     </div>
                 ) : displayBatches.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-20 text-center">
-                        <div className="bg-blue-50 p-6 rounded-full mb-4">
-                            <PackageOpen size={48} className="text-blue-400" />
+                    <div className="flex flex-col items-center justify-center p-24 text-center">
+                        <div className="bg-indigo-50 p-8 rounded-full mb-6">
+                            <PackageOpen size={64} className="text-indigo-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-700 mb-1">No products found</h3>
-                        <p className="text-gray-400 max-w-xs mx-auto mb-6">
-                            Try searching for a different barcode or name.
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">No products found</h3>
+                        <p className="text-gray-400 max-w-sm mx-auto mb-8">
+                            We couldn't find any items matching your search. Try a different term or barcode.
                         </p>
                         <button
                             onClick={() => { setSearchTerm(''); setDisplayBatches(batches); }}
-                            className="text-blue-600 font-medium hover:underline"
+                            className="text-indigo-600 font-bold hover:text-indigo-700 hover:underline"
                         >
-                            Clear search
+                            Clear filters
                         </button>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-100">
-                            <thead className="bg-gray-50/50">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[300px]">Product</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Barcode</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[150px]">Batch Info</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Stock</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Expiration</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Status</th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[80px]">Action</th>
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Product</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Barcode</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Stock</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Expiration</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th className="px-8 py-5 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 bg-white">
-                                {displayBatches.map((batch) => {
+                            <tbody className="divide-y divide-gray-50">
+                                {displayBatches.map((batch, index) => {
                                     const daysLeft = Math.ceil((new Date(batch.expirationDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                                    let statusColor = "bg-green-100 text-green-700";
-                                    let statusDot = "bg-green-500";
+                                    let statusColor = "bg-emerald-100 text-emerald-700 border-emerald-200";
+                                    let statusDot = "bg-emerald-500";
                                     let statusText = "Good";
 
                                     if (daysLeft < 0) {
-                                        statusColor = "bg-red-100 text-red-700";
-                                        statusDot = "bg-red-500";
+                                        statusColor = "bg-rose-100 text-rose-700 border-rose-200";
+                                        statusDot = "bg-rose-500";
                                         statusText = "Expired";
-                                    } else if (daysLeft < 7) {
-                                        statusColor = "bg-yellow-100 text-yellow-700";
-                                        statusDot = "bg-yellow-500";
+                                    } else if (daysLeft < 30) {
+                                        statusColor = "bg-amber-100 text-amber-700 border-amber-200";
+                                        statusDot = "bg-amber-500";
                                         statusText = "Expiring Soon";
                                     }
 
                                     // @ts-ignore
                                     const product = batch.product || {};
 
+                                    const staggerClass = index < 10 ? `animate-slide-up stagger-${index + 1}` : 'animate-slide-up';
                                     return (
-                                        <tr key={batch.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm overflow-hidden border border-gray-100">
+                                        <tr key={batch.id} className={`hover:bg-indigo-50/30 transition-colors group ${staggerClass}`} style={{ animationFillMode: 'both' }}>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-12 w-12 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 p-1">
                                                         {product.image ? (
-                                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                                                         ) : (
-                                                            <span>{product.name ? product.name.charAt(0).toUpperCase() : '#'}</span>
+                                                            <div className="w-full h-full bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500 font-bold text-lg">
+                                                                {product.name ? product.name.charAt(0).toUpperCase() : '#'}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    <div className="ml-4">
-                                                        <div className="text-sm font-semibold text-gray-900">{product.name || `Product #${batch.productId}`}</div>
-                                                        <div className="text-xs text-gray-400">Category: {product.category || 'General'}</div>
+                                                    <div>
+                                                        <div className="font-bold text-gray-800 text-sm">{product.name || `Product #${batch.productId}`}</div>
+                                                        <div className="text-xs text-gray-400 mt-0.5">{product.category || 'General'}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{product.barcode || '-'}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="px-6 py-5">
+                                                <span className="font-mono text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{product.barcode || '-'}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs uppercase text-gray-400 font-bold">ID: {batch.id}</span>
-                                                    <span className="text-xs">Imported: {new Date(batch.createdAt || Date.now()).toLocaleDateString()}</span>
+                                                    <span className="text-sm font-bold text-gray-800">{batch.quantity}</span>
+                                                    <span className="text-xs text-gray-400">{product.unit || 'units'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold text-gray-800">{batch.quantity} <span className="text-gray-400 font-normal text-xs">{product.unit || 'units'}</span></div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="px-6 py-5 text-sm text-gray-600 font-medium">
                                                 {new Date(batch.expirationDate).toLocaleDateString()}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+                                            <td className="px-6 py-5">
+                                                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${statusColor}`}>
                                                     <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                                                     {statusText}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button className="text-gray-400 hover:text-blue-600 p-1 rounded-lg hover:bg-blue-50 transition-colors">
-                                                    Edit
+                                            <td className="px-8 py-5 text-right">
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm('Are you sure you want to delete this item?')) {
+                                                            await inventoryManager.deleteBatch(batch.id);
+                                                            loadData();
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-2 text-gray-400 hover:text-rose-600 font-medium text-sm px-3 py-1.5 hover:bg-rose-50 rounded-lg transition-all ml-auto">
+                                                    <Trash2 size={16} />
+                                                    Delete
                                                 </button>
                                             </td>
                                         </tr>
